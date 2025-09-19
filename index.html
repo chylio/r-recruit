@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>招募資訊一覽</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7fafc;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        <header class="mb-8 text-center">
+            <h1 class="text-4xl font-bold text-gray-900 mb-2">招募資訊一覽</h1>
+            <p class="text-lg text-gray-600">
+                <a href="https://www.chimei.org.tw/%e4%ba%ba%e5%8a%9b%e6%8b%9b%e5%8b%9f/jobList.aspx" target="_blank" class="text-blue-600 hover:text-blue-800 transition-colors">
+                    點擊前往報名網址
+                </a>
+            </p>
+        </header>
+
+        <!-- 篩選與搜尋區塊 -->
+        <div class="bg-white p-6 rounded-xl shadow-md mb-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-4">
+                <label for="search" class="text-lg font-medium text-gray-700 mb-2 md:mb-0 md:mr-4">快速搜尋部門：</label>
+                <input type="text" id="search" placeholder="例如：急診醫學部" class="w-full md:w-1/2 p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+
+            <div class="flex flex-wrap items-center space-x-2 md:space-x-4 mb-4">
+                <span class="text-lg font-medium text-gray-700 mb-2 md:mb-0">招募類型篩選：</span>
+                <div id="type-filters" class="flex flex-wrap gap-2 md:gap-4">
+                    <button data-filter="全部" class="filter-btn px-4 py-2 rounded-full font-medium transition-all bg-blue-600 text-white hover:bg-blue-700">全部</button>
+                    <button data-filter="內招" class="filter-btn px-4 py-2 rounded-full font-medium transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">內招</button>
+                    <button data-filter="外招" class="filter-btn px-4 py-2 rounded-full font-medium transition-all bg-gray-200 text-gray-700 hover:bg-gray-300">外招</button>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center space-x-2 md:space-x-4">
+                <span class="text-lg font-medium text-gray-700 mb-2 md:mb-0">科別篩選：</span>
+                <div id="dept-filters" class="flex flex-wrap gap-2 md:gap-4">
+                    <!-- 科別篩選按鈕將在此動態生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 招募時間軸列表 -->
+        <div id="jobs-container" class="relative pl-8 sm:pl-16">
+            <!-- 時間軸線 -->
+            <div class="absolute inset-y-0 left-0 w-1 bg-gray-200 rounded-full hidden sm:block"></div>
+            <!-- 動態生成的招募事件將會顯示在這裡 -->
+        </div>
+
+        <!-- 空白結果提示 -->
+        <div id="no-results" class="hidden text-center py-12 text-gray-500 text-lg">
+            找不到符合條件的招募資訊。
+        </div>
+
+    </div>
+
+    <script>
+        // 招募資訊數據
+        const jobsData = [
+            {
+                department: '耳鼻喉科',
+                slots: '1名',
+                type: '內招',
+                datetime: '114.10.22(三) PM16:00',
+                location: '第五醫療大樓556會議室-報到+筆試(30分) / 第五醫療大樓558會議室-面試',
+                deadline: '114.10.19(日)',
+                eventDate: new Date('2025-10-22'),
+                deadlineDate: new Date('2025-10-19')
+            },
+            {
+                department: '急診醫學部',
+                slots: '4名',
+                type: '內招',
+                datetime: '114.10.02 (四)PM17:00',
+                location: '第五醫療大樓556會議室-報到 / 第五醫療大樓558會議室-面試',
+                deadline: '114.09.30',
+                eventDate: new Date('2025-10-02'),
+                deadlineDate: new Date('2025-09-30')
+            },
+            {
+                department: '急診醫學部',
+                slots: '4名',
+                type: '外招',
+                datetime: '114.10.12(日)AM10:30',
+                location: '第五醫療大樓556會議室-報到 / 第五醫療大樓558會議室-面試',
+                deadline: '114.10.08',
+                eventDate: new Date('2025-10-12'),
+                deadlineDate: new Date('2025-10-08')
+            },
+            {
+                department: '婦產部',
+                slots: '1-2名',
+                type: '內招',
+                datetime: '114.10.16(四)AM09:00',
+                location: '第五醫療大樓563會議室-面試',
+                deadline: '114.10.13(一)',
+                eventDate: new Date('2025-10-16'),
+                deadlineDate: new Date('2025-10-13')
+            },
+            {
+                department: '婦產部',
+                slots: '1-2名',
+                type: '外招',
+                datetime: '114.11.02(日)AM09:00',
+                location: '第五醫療大樓國際會議廳前-報到',
+                deadline: '114.10.30(四)',
+                eventDate: new Date('2025-11-02'),
+                deadlineDate: new Date('2025-10-30')
+            }
+        ];
+
+        // DOM 元素
+        const jobsContainer = document.getElementById('jobs-container');
+        const searchInput = document.getElementById('search');
+        const typeFilters = document.getElementById('type-filters');
+        const deptFilters = document.getElementById('dept-filters');
+        const noResultsMessage = document.getElementById('no-results');
+
+        // 當前篩選條件
+        let currentTypeFilter = '全部';
+        let currentDeptFilter = '全部';
+        let currentSearchQuery = '';
+        const 报名网址 = "https://www.chimei.org.tw/%e4%ba%ba%e5%8a%9b%e6%8b%9b%e5%8b%9f/jobList.aspx";
+        const combinedSlots = {
+            '急診醫學部': '4名',
+            '婦產部': '1-2名',
+            '耳鼻喉科': '1名'
+        };
+
+        // 動態生成科別篩選按鈕
+        function generateDeptFilters() {
+            // 獲取所有不重複的科別
+            const departments = ['全部', ...new Set(jobsData.map(job => job.department))];
+
+            departments.forEach(dept => {
+                const button = document.createElement('button');
+                button.dataset.filter = dept;
+                button.classList.add('filter-btn', 'px-4', 'py-2', 'rounded-full', 'font-medium', 'transition-all', 'bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                button.textContent = dept;
+                if (dept === '全部') {
+                    button.classList.remove('bg-gray-200', 'text-gray-700');
+                    button.classList.add('bg-blue-600', 'text-white');
+                }
+                deptFilters.appendChild(button);
+            });
+        }
+
+        // 渲染招募事件
+        function renderJobs(jobs) {
+            jobsContainer.innerHTML = '';
+            
+            if (jobs.length === 0) {
+                noResultsMessage.classList.remove('hidden');
+            } else {
+                noResultsMessage.classList.add('hidden');
+                
+                // Group jobs by department
+                const groupedJobs = jobs.reduce((acc, job) => {
+                    if (!acc[job.department]) {
+                        acc[job.department] = [];
+                    }
+                    acc[job.department].push(job);
+                    return acc;
+                }, {});
+
+                Object.keys(groupedJobs).forEach(department => {
+                    const departmentJobs = groupedJobs[department];
+                    const combinedCard = document.createElement('div');
+                    combinedCard.classList.add('flex', 'flex-col', 'sm:flex-row', 'items-start', 'relative', 'pb-8');
+                    
+                    const slotTag = `<span class="text-xl font-semibold rounded-full px-4 py-2 bg-gray-200 text-gray-700 ml-2">${combinedSlots[department]}</span>`;
+
+                    const headerHtml = `
+                        <div class="flex items-center mb-4">
+                            <h3 class="text-3xl font-bold text-gray-900 flex items-center">
+                                <span>${department}</span>
+                                ${slotTag}
+                            </h3>
+                        </div>
+                    `;
+
+                    let jobListHtml = '';
+                    departmentJobs.forEach(job => {
+                        const today = new Date();
+                        const isExpired = job.deadlineDate < today;
+                        const expiredClass = isExpired ? 'opacity-50' : '';
+
+                        let statusTagHtml = '';
+                        if (isExpired) {
+                            statusTagHtml = `<span class="inline-block px-4 py-2 rounded-full text-base font-semibold text-white bg-red-500">已截止</span>`;
+                        } else {
+                            statusTagHtml = `<a href="${报名网址}" target="_blank" class="inline-block px-4 py-2 rounded-full text-base font-semibold text-white bg-green-500 hover:bg-green-600 transition-colors">報名中</a>`;
+                        }
+
+                        jobListHtml += `
+                            <div class="bg-white p-6 rounded-xl shadow-md w-full transition-all transform hover:scale-[1.02] ${expiredClass} mb-4">
+                                <div class="flex items-center mb-4">
+                                    <h4 class="text-xl font-bold text-gray-900 flex items-center">
+                                        <span class="text-lg font-semibold rounded-full px-4 py-2 ${job.type === '內招' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">${job.type}</span>
+                                    </h4>
+                                    <div class="ml-auto">
+                                        ${statusTagHtml}
+                                    </div>
+                                </div>
+                                <div class="space-y-2 text-lg">
+                                    <p class="text-gray-600">
+                                        <span class="font-bold">招募日期：</span> ${job.datetime}
+                                    </p>
+                                    <p class="text-gray-600">
+                                        <span class="font-bold">地點：</span> ${job.location}
+                                    </p>
+                                    <hr class="border-gray-200">
+                                    <div class="flex items-center justify-between text-gray-700">
+                                        <span class="font-medium">報名截止日：
+                                            <span class="${isExpired ? 'text-red-500' : 'text-blue-600 font-bold'}">
+                                                ${job.deadline}
+                                            </span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    // Check if the overall card is expired.
+                    const isCardExpired = departmentJobs.every(job => job.deadlineDate < new Date());
+
+                    // Render combined card
+                    combinedCard.innerHTML = `
+                        <!-- 時間軸圓點 -->
+                        <div class="absolute left-0 top-1.5 w-4 h-4 rounded-full ${isCardExpired ? 'bg-red-500' : 'bg-blue-500'} ring-4 ring-white shadow-md"></div>
+                        <div class="w-full ml-8">
+                            ${headerHtml}
+                            ${jobListHtml}
+                        </div>
+                    `;
+                    jobsContainer.appendChild(combinedCard);
+                });
+            }
+        }
+
+        // 篩選招募資訊並重新渲染
+        function filterJobs() {
+            let filteredJobs = jobsData;
+
+            // 根據關鍵字搜尋
+            if (currentSearchQuery.trim() !== '') {
+                filteredJobs = filteredJobs.filter(job => job.department.includes(currentSearchQuery));
+            }
+
+            // 根據招募類型篩選
+            if (currentTypeFilter !== '全部') {
+                filteredJobs = filteredJobs.filter(job => job.type === currentTypeFilter);
+            }
+
+            // 根據科別篩選
+            if (currentDeptFilter !== '全部') {
+                filteredJobs = filteredJobs.filter(job => job.department === currentDeptFilter);
+            }
+
+            // 根據招募日期由近到遠排序
+            filteredJobs.sort((a, b) => a.eventDate - b.eventDate);
+
+            renderJobs(filteredJobs);
+        }
+
+        // 事件監聽器：招募類型篩選按鈕
+        typeFilters.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button) {
+                // 更新按鈕樣式
+                typeFilters.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                button.classList.remove('bg-gray-200', 'text-gray-700');
+                button.classList.add('bg-blue-600', 'text-white');
+
+                // 更新篩選條件並重新渲染
+                currentTypeFilter = button.dataset.filter;
+                filterJobs();
+            }
+        });
+
+        // 事件監聽器：科別篩選按鈕
+        deptFilters.addEventListener('click', (e) => {
+            const button = e.target.closest('button');
+            if (button) {
+                // 更新按鈕樣式
+                deptFilters.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'text-white');
+                    btn.classList.add('bg-gray-200', 'text-gray-700');
+                });
+                button.classList.remove('bg-gray-200', 'text-gray-700');
+                button.classList.add('bg-blue-600', 'text-white');
+
+                // 更新篩選條件並重新渲染
+                currentDeptFilter = button.dataset.filter;
+                filterJobs();
+            }
+        });
+
+        // 事件監聽器：搜尋欄位
+        searchInput.addEventListener('input', (e) => {
+            currentSearchQuery = e.target.value;
+            filterJobs();
+        });
+        
+        // 頁面載入時初始渲染
+        document.addEventListener('DOMContentLoaded', () => {
+            generateDeptFilters();
+            filterJobs();
+        });
+    </script>
+
+</body>
+</html>
